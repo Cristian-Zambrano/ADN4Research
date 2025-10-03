@@ -1,56 +1,57 @@
-# SEGUN EL MVP
-Feature: Managing the lifecycle of research questions (crear → refinar → aprobar → versionar)
-    As a researcher,
-    I want to refine, version, and validate my research questions using structured frameworks,
-    So that I maintain clarity, traceability, and accountability throughout the systematic review.
+# Ciclo de vida de las preguntas de investigación (crear → refinar → aprobar → versionar)
+# Refinar: hacer la pregunta más precisa, específica y bien definida mediante marcos de trabajo investigativos
+# Publish: sent to owner for approval
+Feature: Managing the lifecycle of research questions
+    As a researcher
+    I want to maintain control over the evolution of my research questions
+    So that I can ensure their proper validation throughout the systematic review.
 
     # Esto para el MVP
-    Scenario: Refine a research question using a <framework> research framework
+    Scenario: Publish a refined research question as a draft for review
         Given I have the research question "¿Cómo influye la tecnología en la educación?"
         When I complete all the <framework> fields
         Then a refined version of the question should be generated including:
-        | element               |
-        | the original question |
-        | the completed fields  |
+        | element                   |
+        | the original question     |
+        | the completed fields      |
         | the reformulated question |
-        And the refined version should be stored in the research question history as a "draft"
+        And the refined version should be stored in the research question history as a "draft for review"
+        And the system should send the draft to the research owner for review
+        And the draft should be published on the approvement center
     Examples:
         | framework | fields                                        |
         | PICO      | Population, Intervention, Comparison, Outcome |
         | PCC       | Population, Concept, Context                  |
         | PEO       | Population, Exposure, Outcome                 |
 
-    # Esto para el MVP
-    Scenario: Attempt to refine a research question with incomplete framework fields
+    # Esto para el MVP | se considera como guardado automatico, el boton de publicar es del escenario 1
+    Scenario: Save a partially completed research question draft
         Given I have the research question "¿Cómo influye la tecnología en la educación?"
-        When I complete only Population and Intervention fields of the <framework>
+        When I dont complete all the fields of the <framework> to refined it
         Then the system should generate a partial refinement including:
-        | element               |
-        | the original question |
+        | element                        |   
+        | the original question          |
         | the partially completed fields |
-        And the refinement should be stored in the research question history as an "incomplete draft"
-        And the incomplete draft should not be eligible for submission to the owner
+        And the incomplete refinement should be stored in the research question history as an "incomplete draft"
+        And the incomplete draft should not be sent for submission to the owner
     Examples:
         | framework | fields                                        |
         | PICO      | Population, Intervention, Comparison, Outcome |
         | PCC       | Population, Concept, Context                  |
         | PEO       | Population, Exposure, Outcome                 |
 
-    Scenario: Send a refined research question for approval
-        Given I have a refined draft research question generated with the PICO framework
-        When I send the refined question for approval to the research team via communication bus
-        And the owner approves the question with the justification "Aligned with project objectives"
-        Then the question status should be updated to "approved"
-        And the approval record should store the approver, justification, and approval date
-        And all other researchers should receive a notification of the submission
-    
-    #Preguntar si esto puede ser un paso del escenario negativo 1 o esta bien como independiente
-    Scenario: Attempt to send an incomplete draft research question for approval 
-        Given I have an incomplete draft research question generated with the PICO framework
-        When I attempt to send the incomplete draft for approval to the research team
-        Then the system should prevent the submission
-        And I should see a message "The research question cannot be sent for approval until all framework fields are completed"
-        And the question should remain stored in the research question history as an "incomplete draft"
+    Scenario: Research owner approves a research question
+        Given at least one research question draft on the approvement center
+        When the owner approves a draft with the justification "Aligned with project objectives"
+        Then the draft status should be updated to "approved"
+        And the approval record should store in the research question history with: approver, justification, and approval date
+        And all other researchers should receive a notification of the approval
+
+    Scenario: Research owner rejects a research question
+        Given at least one research question draft on the approvement center
+        When the owner rejects a draft with the justification "Not aligned with project objectives"
+        Then the draft status should be updated to "rejected"
+        And all other researchers should receive a notification of the rejection
 
     # Un escenario puede evolucionar en sus pasos cuando se avanza en la entrega de funcionalidades? (mas "MVPs") 
     Scenario: Track the version history of a research question
@@ -60,4 +61,4 @@ Feature: Managing the lifecycle of research questions (crear → refinar → apr
         When I view the version history of the research question
         Then I should see all versions in chronological order
         And each version should display: author, framework used, approver, justification, and timestamp
-        And all drafts derived from the original question should be included
+        And all the states of the research question derived from the original question should be included

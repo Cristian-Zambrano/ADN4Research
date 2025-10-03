@@ -7,7 +7,7 @@ Feature: Research Questions Design
 # Aqui interactuamos con Alexis igual
 Feature: Do a pilot test
     As a researcher,
-    I want to conduct a pilot test of my search chain,
+    I want to conduct a pilot test of my search string,
     To ensure there is sufficient information to answer the research questions.
 
 Feature: Refining Research Questions

@@ -1,7 +1,7 @@
 # SEGUN EL MVP
 Feature: Building Structured Search Strings
     As a researcher,
-    I want to build my search chain based on my refined research questions,
+    I want to build my search string based on my refined research questions,
     So that I can retrieve relevant papers that contribute to my research.
 
     # Esto para el MVP
