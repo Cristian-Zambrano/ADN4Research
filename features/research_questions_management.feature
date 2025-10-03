@@ -4,6 +4,7 @@ Feature: Managing the lifecycle of research questions (crear → refinar → apr
     I want to refine, version, and validate my research questions using structured frameworks,
     So that I maintain clarity, traceability, and accountability throughout the systematic review.
 
+    # Esto para el MVP
     Scenario: Refine a research question using a <framework> research framework
         Given I have the research question "¿Cómo influye la tecnología en la educación?"
         When I complete all the <framework> fields
@@ -19,6 +20,7 @@ Feature: Managing the lifecycle of research questions (crear → refinar → apr
         | PCC       | Population, Concept, Context                  |
         | PEO       | Population, Exposure, Outcome                 |
 
+    # Esto para el MVP
     Scenario: Attempt to refine a research question with incomplete framework fields
         Given I have the research question "¿Cómo influye la tecnología en la educación?"
         When I complete only Population and Intervention fields of the <framework>
@@ -50,6 +52,7 @@ Feature: Managing the lifecycle of research questions (crear → refinar → apr
         And I should see a message "The research question cannot be sent for approval until all framework fields are completed"
         And the question should remain stored in the research question history as an "incomplete draft"
 
+    # Un escenario puede evolucionar en sus pasos cuando se avanza en la entrega de funcionalidades? (mas "MVPs") 
     Scenario: Track the version history of a research question
         Given I have an original research question "¿Cómo influye la tecnología en la educación?"
         And I generate multiple refinements of the question using the PICO framework
