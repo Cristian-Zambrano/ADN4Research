@@ -1,0 +1,41 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Inbox del Owner</title>
+  <style>
+    body { font-family: Arial; margin: 24px; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border:1px solid #ddd; padding:8px; }
+    th { background:#f4f4f4; text-align:left; }
+  </style>
+</head>
+<body>
+  <h2>Inbox de {{ owner.name }}</h2>
+  <p><a href="{% url 'design_submit' %}">Enviar otra reformulación</a></p>
+  <table>
+    <thead>
+      <tr>
+        <th>Fecha</th>
+        <th>Pregunta</th>
+        <th>Researcher</th>
+        <th>Status</th>
+        <th>Iteración</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for it in items %}
+        <tr>
+          <td>{{ it.submitted_at }}</td>
+          <td>{{ it.iteration.research_question.original_text|truncatechars:80 }}</td>
+          <td>{{ it.iteration.researcher.name }}</td>
+          <td>{{ it.iteration.status }}</td>
+          <td>{{ it.iteration.iteration_number }}</td>
+        </tr>
+      {% empty %}
+        <tr><td colspan="5">Sin elementos por aprobar.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

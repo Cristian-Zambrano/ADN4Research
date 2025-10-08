@@ -6,7 +6,7 @@ from django.contrib.auth.models import User
 from design.comunication import events as bus_events
 from design.dto.dto import SubmitDraftForReviewCommand
 from design.models import ApprovalCenter, ApprovalItem, Framework, ReformulatedResearchQuestionIteration, ResearchOwner, ResearchQuestion, ResearchQuestionHistory, Researcher
-from design.services.services import ResearchQuestionHistoryService, ResearchQuestionSubmissionService
+from design.services.services import ResearchQuestionSubmissionService
 
 
 def before_all(context):
@@ -39,14 +39,12 @@ def before_scenario(context, scenario):
             "source": "adapter",
         })
 
-    # Patch del bus interno (el que muestra tu logging)
     context._bus_internal_patcher = patch(
         'shared.internal_message_bus.MessageBus.publish_event',
         side_effect=_capture_internal
     )
     context._bus_internal_patcher.start()
 
-    # Patch opcional del BusAdapter si alguna ruta aún lo usa
     context._bus_adapter_patcher = patch(
         'design.comunication.bus_adapter.BusAdapter.publish_event',
         side_effect=_capture_adapter
@@ -74,7 +72,7 @@ def step_given_research_question(context, question):
   
 @when('I complete all the "{fields}" required by the "{framework}"')
 def step_when_complete_framework_fields(context, framework, fields):
-    before_all(context)  # Ensure frameworks are loaded
+    before_all(context)
     framework_obj = Framework.objects.get(name=framework)
     required_fields = list(framework_obj.fields.keys())
     provided_fields = [f.strip() for f in fields.split(',')]

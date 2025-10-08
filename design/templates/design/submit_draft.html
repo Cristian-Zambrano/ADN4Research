@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Enviar borrador a revisión</title>
+  <style>
+    body { font-family: Arial; margin: 24px; }
+    .row { margin-bottom: 12px; }
+    label { display:block; font-weight:bold; margin-bottom:4px; }
+    input[type=text], textarea, select { width: 480px; padding:8px; }
+    .fields { margin-top: 12px; padding: 12px; border: 1px solid #ddd; }
+    .actions { margin-top: 16px; }
+    .msg { padding: 8px; background: #eef; border: 1px solid #99c; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  {% if messages %}
+    {% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}
+  {% endif %}
+
+  <h2>Enviar borrador a revisión</h2>
+
+  <form method="get">
+    <div class="row">
+      <label>Framework</label>
+      <select name="framework" onchange="this.form.submit()">
+        <option value="">-- Seleccione --</option>
+        {% for fw in frameworks %}
+          <option value="{{ fw.id }}" {% if selected_framework and fw.id == selected_framework.id %}selected{% endif %}>
+            {{ fw.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+  </form>
+
+  <form method="post">
+    {% csrf_token %}
+    {% if selected_framework %}
+      <input type="hidden" name="framework_id" value="{{ selected_framework.id }}">
+    {% else %}
+      <input type="hidden" name="framework_id" value="">
+    {% endif %}
+    <div class="row">
+      <label>Pregunta original</label>
+      <textarea name="original_text" rows="2">{{ original_text|default:'' }}</textarea>
+    </div>
+
+    {% if selected_framework %}
+      <div class="fields">
+        <h4>Campos requeridos ({{ selected_framework.name }})</h4>
+        {% for key in field_keys %}
+          <div class="row">
+            <label>{{ key }}</label>
+            <input type="text" name="field_{{ key }}" value="">
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    
+    <div class="row">
+      <label>Pregunta reformulada</label>
+      <textarea name="reformulated_text" rows="3">{{ reformulated_text|default:'' }}</textarea>
+    </div>
+
+    <div class="actions">
+      <button type="submit">Enviar a revisión</button>
+      <a href="{% url 'design_owner_inbox' %}">Ver bandeja del owner</a>
+    </div>
+  </form>
+</body>
+</html>
