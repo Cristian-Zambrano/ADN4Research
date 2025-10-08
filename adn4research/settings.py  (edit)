@@ -1,0 +1,10 @@
+INSTALLED_APPS = [
+    ...
+    'behave_django',
+    ...
+]
+
+BEHAVE_DJANGO = {
+    'django_settings': 'adn4research.settings',
+    'features': 'features',
+}

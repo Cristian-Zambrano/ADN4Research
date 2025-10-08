@@ -38,9 +38,13 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'behave_django',
-    'design',
+    'design.apps.DesignConfig',
 ]
 
+BEHAVE_DJANGO = {
+    'django_settings': 'adn4research.settings',
+    'features': 'features',
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

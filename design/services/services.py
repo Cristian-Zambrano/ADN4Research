@@ -1,57 +1,67 @@
-from design.bus_adapter.bus_adapter import BusAdapter
-from design.models.models import ReformulatedResearchQuestionIteration
-from design.bus_adapter import events as bus_events
-
-
-class ResearchQuestionSubmissionService:
-    def submit_draft_for_review(self, command):
-        reformulated_question = ReformulatedResearchQuestionIteration(
-            researcher_id=command.researcher_id,
-            created_by_id=command.researcher_id,  # ensure required field
-            research_question_id=command.research_question_id,
-            framework_id=command.framework_id,
-            filled_fields=command.filled_fields,
-            reformulated_research_question=command.reformulated_text,
-            status='to_review',
-            iteration_number=(
-                ReformulatedResearchQuestionIteration.objects
-                .filter(research_question_id=command.research_question_id)
-                .count() + 1
-            )
-        )
-        ResearchQuestionHistoryService().store_question_iteration_on_history(reformulated_question)
-        return reformulated_question
+from design.comunication.bus_adapter import BusAdapter
+from design.dto.dto import SubmitDraftForReviewCommand
+from design.models import ApprovalCenter, ApprovalItem, ReformulatedResearchQuestionIteration, ResearchQuestionHistory, ResearchOwner
+from django.db import transaction 
 
 class ResearchQuestionHistoryService:
-    # Contrato de eventos publicados por el módulo de diseño
-    RQ_DRAFT_TO_REVIEW_CREATED = "rq.draft.to_review.created"
-    RQ_DRAFT_INCOMPLETE_SAVED = "rq.draft.incomplete.saved"
-    def store_question_iteration_on_history(self, reformulated_question):
-        reformulated_question.save()
-        event_by_status = {
-            'to_review': bus_events.RQ_DRAFT_TO_REVIEW_CREATED,
-            'incomplete_draft': bus_events.RQ_DRAFT_INCOMPLETE_SAVED,
-        }
-        event_name = event_by_status.get(getattr(reformulated_question, 'status', None))
-        if event_name:
-            payload = {
-                "refinement_iteration_id": reformulated_question.id,
-                "iteration_number": getattr(reformulated_question, "iteration_number", None),
-                "research_question_id": reformulated_question.research_question_id,
-                "researcher_id": reformulated_question.researcher_id,
-                "framework": getattr(reformulated_question.framework, "name", None),
-                "filled_fields": getattr(reformulated_question, "filled_fields", None),
-                "reformulated_research_question": getattr(reformulated_question, "reformulated_research_question", None),
-                "status": reformulated_question.status,
-                "created_at": (
-                    reformulated_question.created_at.isoformat()
-                    if getattr(reformulated_question, "created_at", None) else None
-                ),
+    def store_question_iteration_on_history(self, iteration: ReformulatedResearchQuestionIteration) -> ReformulatedResearchQuestionIteration:
+        iteration.full_clean()
+        iteration.save()
+        ResearchQuestionHistory.objects.create(
+            research_question=iteration.research_question,
+            iteration=iteration,
+        )
+        return iteration
+
+class ApprovalCenterService:
+    def publish_draft_to_approval_center(self, iteration: ReformulatedResearchQuestionIteration) -> ApprovalItem:
+        assigned_owner = ResearchOwner.objects.first()
+        if not assigned_owner:
+            raise ValueError("No ResearchOwner available to assign review.")
+
+        center, _ = ApprovalCenter.objects.get_or_create(owner=assigned_owner)
+        item = ApprovalItem.objects.create(
+            approval_center=center,
+            iteration=iteration,
+            submitted_by=iteration.researcher,
+        )
+        BusAdapter().publish_event(
+            "research_question.sent_to_owner_for_review",
+            {
+                "approval_center_id": center.id,
+                "approval_item_id": item.id,
+                "owner_id": assigned_owner.id,
+                "iteration_id": iteration.id,
+                "research_question_id": iteration.research_question_id,
+                "submitted_by_id": iteration.researcher_id,
+                "status": iteration.status,
             }
-            BusAdapter().publish_event(event_name, payload)
+        )
+        return item
 
-        return reformulated_question
+class ResearchQuestionSubmissionService:
+    def __init__(self):
+        self._history = ResearchQuestionHistoryService()
+        self._approvals = ApprovalCenterService()
 
-    def exist_question_on_history(self, question_id):
-        return ReformulatedResearchQuestionIteration.objects.filter(research_question_id=question_id).exists()
+    @transaction.atomic
+    def submit_draft_for_review(self, refained_question_cmd: SubmitDraftForReviewCommand) -> int:
+        reformulated = ReformulatedResearchQuestionIteration(
+            researcher_id=refained_question_cmd.researcher_id,
+            research_question_id=refained_question_cmd.research_question_id,
+            framework_id=refained_question_cmd.framework_id,
+            filled_fields=refained_question_cmd.filled_fields,
+            reformulated_research_question=refained_question_cmd.reformulated_text,
+            status=refained_question_cmd.status,
+            iteration_number=(
+                ReformulatedResearchQuestionIteration.objects
+                .filter(research_question_id=refained_question_cmd.research_question_id)
+                .count() + 1
+            ),
+        )
+        saved_iteration = self._history.store_question_iteration_on_history(reformulated)
+        if saved_iteration.status == 'to_review':
+            self._approvals.publish_draft_to_approval_center(saved_iteration)
+            return 1
+        return 0
         

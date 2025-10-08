@@ -8,3 +8,4 @@ class SubmitDraftForReviewCommand:
     framework_id: int
     filled_fields: Dict[str, str]
     reformulated_text: str
+    status: str

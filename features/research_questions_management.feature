@@ -12,8 +12,8 @@ Feature: Managing the lifecycle of research questions
     # Esto para el MVP
     Scenario Outline: Publish a reformulated research question as a draft for review
         Given I have the research question "¿Cómo influye la tecnología en la educación?"
-        When I complete all the <fields> required by the <framework>
-        And I provide the reformulated question text 
+        When I complete all the "<fields>" required by the "<framework>"
+        And I provide the reformulated question text
         And I send the draft to the research owner for review
         Then a reformulated version of the question should be stored in the research question history including:
         | element                   |
@@ -25,7 +25,7 @@ Feature: Managing the lifecycle of research questions
         | status = to_review        |
         | number of iteration       |
         | timestamp                 |
-        And the draft should be published on the approval center
+        And the system should notify the owner about the iteration to approve
     Examples:
         | framework | fields                                        |
         | PICO      | Population, Intervention, Comparison, Outcome |
