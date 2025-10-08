@@ -12,10 +12,10 @@ Feature: Managing the lifecycle of research questions
     # Esto para el MVP
     Scenario Outline: Publish a reformulated research question for review
         Given I have the research question "¿Cómo influye la tecnología en la educación?"
-        When I complete all the "<fields>" required by the "<framework>"
-        And I provide the reformulated question text
-        And I send the draft to the research owner for review
-        Then a reformulated version of the question should be stored in the research question history including:
+        And I have completed all the "<fields>" required by the "<framework>"
+        And I have provided the reformulated question text
+        When I send the draft to the research owner for review
+        Then a reformulated version of the question should be generated and stored in the research question history including:
         | element                   |
         | researcher                |
         | the original question     |
@@ -32,25 +32,28 @@ Feature: Managing the lifecycle of research questions
         | PCC       | Population, Concept, Context                  |
         | PEO       | Population, Exposure, Outcome                 |
         # Cambia no mas esta cosa para ponerlo como publicar que sea el trigger
-
+'''
 # Esto para el MVP | se considera como guardado automatico, el boton de publicar es del escenario 1
-    Scenario Outline: Save a partially completed research question draft
+    Scenario Outline: Save an incomplete research question draft
         Given I have the research question "¿Cómo influye la tecnología en la educación?"
         And I choose a framework "<framework>"
-        #When I don't complete all the "<fields>" of the "<framework>"
-        #Then the system should generate a partial refinement including:
-        | element                        |
-        | the original question          |
-        | the partially completed fields |
-        #And the system should stored the draft in the research question history as an "incomplete draft"
-        #And the incomplete draft should not be sent for submission to the owner
+        When I have completed "<partially_completed_fields>" of the "<framework>"
+        And I have not yet completed all required information
+        #Then the system should store an incomplete draft in the research question history including:
+            | element                        |
+            | the original question          |
+            | the framework used             |
+            | the partially completed fields |
+            | status = incomplete_draft      |
+            | timestamp                      |
+        #And the draft should not be submitted for review
     Examples:
-        | framework | fields                                        |
-        | PICO      | Population, Intervention, Comparison, Outcome |
-        | PCC       | Population, Concept, Context                  |
-        | PEO       | Population, Exposure, Outcome                 |
+        | framework | partially_completed_fields           |
+        | PICO      | Population, Intervention             |
+        | PCC       | Population                           |
+        | PEO       | Population, Outcome                  |
 
-'''
+
     Scenario: Research owner approves a research question
         Given at least one research question draft on the approval center
         When the owner approves a draft with the justification "Aligned with project objectives"

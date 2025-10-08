@@ -59,9 +59,9 @@ class ResearchQuestionSubmissionService:
                 .count() + 1
             ),
         )
-        saved_iteration = self._history.store_question_iteration_on_history(reformulated)
+        saved_iteration = self._history.store_question_iteration_on_history(reformulated) # aqui la guardo en el historial
         if saved_iteration.status == 'to_review':
-            self._approvals.publish_draft_to_approval_center(saved_iteration)
+            self._approvals.publish_draft_to_approval_center(saved_iteration) # si es to review, la envio a aprobacion
             return 1
         return 0
         
