@@ -1,6 +1,3 @@
-class IncompleteFrameworkException(Exception):
+class SubmissionError(Exception):
     """Raised when framework fields are not completely filled"""
-    pass
-
-class IncompleteRefinementException(Exception):
     pass

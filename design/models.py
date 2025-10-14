@@ -1,64 +1,63 @@
 from django.db import models
-from django.contrib.auth.models import User
-
-class Researcher(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100)
-
-class ResearchOwner(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    name = models.CharField(max_length=100)
+from django.conf import settings
 
 class ResearchQuestion(models.Model):
-    original_text = models.TextField()
-    created_by = models.ForeignKey('Researcher', on_delete=models.CASCADE)
+    """Representa la pregunta de investigación principal y su estado general."""
+    project = models.ForeignKey('projects.Project', on_delete=models.CASCADE, related_name='research_questions')
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.SET_NULL,
+        null=True
+    )
     created_at = models.DateTimeField(auto_now_add=True)
+    
+class ResearchQuestionVersion(models.Model):
+    """Almacena una versión inmutable y específica de una ResearchQuestion."""
+    class StatusChoices(models.TextChoices):
+        DRAFT = 'DRAFT', 'Draft'
+        SUGGESTED = 'SUGGESTED', 'Suggested'
+        APPROVED = 'APPROVED', 'Approved'
+        REJECTED = 'REJECTED', 'Rejected'
+
+    class FrameworkChoices(models.TextChoices):
+        PICO = 'PICO', 'PICO'
+        PCC = 'PCC', 'PCC'
+        PEO = 'PEO', 'PEO'
+
+    # Relaciones y Metadatos
+    question = models.ForeignKey(ResearchQuestion, on_delete=models.CASCADE, related_name='versions')
+    parent_version = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='children')
+    researcher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='question_versions')
+    status = models.CharField(max_length=10, choices=StatusChoices.choices, default=StatusChoices.DRAFT)
+    iteration_number = models.PositiveIntegerField(default=1)
+    submitted_at = models.DateTimeField(auto_now_add=True) # Corresponde a 'timestamp'
+
+    # Datos del Escenario
+    framework = models.CharField(max_length=4, choices=FrameworkChoices.choices)
+    reformulated_text = models.TextField(blank=True, default='')
+    # Usamos JSONField para flexibilidad máxima con los campos del framework
+    framework_fields = models.JSONField()
+
     def __str__(self):
-        return self.original_text[:50]
+        return f"{self.question.id} - v{self.iteration_number} ({self.get_status_display()})"
 
-class Framework(models.Model):
-    name = models.CharField(max_length=50)
-    fields = models.JSONField()
-
-class ReformulatedResearchQuestionIteration(models.Model):
-    STATUS_CHOICES = [
-        ('incomplete_draft', 'Incomplete Draft'),
-        ('to_review', 'To Review'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-    ]
-    researcher = models.ForeignKey(Researcher, on_delete=models.PROTECT, related_name='iterations_as_researcher')
-    research_question = models.ForeignKey(ResearchQuestion, on_delete=models.CASCADE, related_name='refinements')
-    framework = models.ForeignKey(Framework, on_delete=models.PROTECT)
-    filled_fields = models.JSONField(default=dict)
-    reformulated_research_question = models.TextField()
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, db_index=True)
-    iteration_number = models.PositiveIntegerField()
+class Task(models.Model):
+    project = models.ForeignKey('projects.Project', on_delete=models.CASCADE, related_name='desing_tasks')
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_tasks'
+    )
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='assigned_tasks'
+    )
     created_at = models.DateTimeField(auto_now_add=True)
-
-class ApprovalCenter(models.Model):
-    owner = models.OneToOneField('ResearchOwner', on_delete=models.CASCADE, related_name='approval_center')
-    created_at = models.DateTimeField(auto_now_add=True)
-    class Meta:
-        indexes = [models.Index(fields=['owner'])]
-
-class ApprovalItem(models.Model):
-    approval_center = models.ForeignKey('ApprovalCenter', on_delete=models.CASCADE, related_name='items')
-    iteration = models.ForeignKey('ReformulatedResearchQuestionIteration', on_delete=models.CASCADE, related_name='approval_items')
-    submitted_by = models.ForeignKey('Researcher', on_delete=models.CASCADE)
-    submitted_at = models.DateTimeField(auto_now_add=True)
-    class Meta:
-        unique_together = ('approval_center', 'iteration')
-        indexes = [models.Index(fields=['approval_center', 'submitted_at']),
-                   models.Index(fields=['iteration'])]
-
-class ResearchQuestionHistory(models.Model):
-    research_question = models.ForeignKey(ResearchQuestion, on_delete=models.CASCADE, related_name='history_entries')
-    iteration = models.ForeignKey(ReformulatedResearchQuestionIteration, on_delete=models.CASCADE)
-    recorded_at = models.DateTimeField(auto_now_add=True)
-    class Meta:
-        unique_together = ('research_question', 'iteration')
-        indexes = [models.Index(fields=['research_question', 'recorded_at'])]
-    @classmethod
-    def is_iteration_in_history(cls, iteration_id: int) -> bool:
-        return cls.objects.filter(iteration_id=iteration_id).exists()
+    
+    def __str__(self):
+        return self.title

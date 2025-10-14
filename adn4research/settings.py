@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'behave_django',
     'design.apps.DesignConfig',
+    'projects',
 ]
 
 BEHAVE_DJANGO = {

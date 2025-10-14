@@ -1,193 +1,145 @@
-from unittest.mock import patch
+import json
 from behave import given, when, then, step
-from datetime import datetime
 from django.contrib.auth.models import User
+from rest_framework import status
+from design.models import ResearchQuestion, ResearchQuestionVersion, Task
+from projects.models import Project
 
-from design.comunication import events as bus_events
-from design.dto.dto import SubmitDraftForReviewCommand
-from design.models import ApprovalCenter, ApprovalItem, Framework, ReformulatedResearchQuestionIteration, ResearchOwner, ResearchQuestion, ResearchQuestionHistory, Researcher
-from design.services.services import ResearchQuestionSubmissionService
-
-
-def before_all(context):
-    frameworks = [
-        ("PICO", {"Population": "aa", "Intervention": "aa", "Comparison": "aaa", "Outcome": "aaa"}),
-        ("PCC", {"Population": "Population", "Concept": "Concept", "Context": "Context"}),
-        ("PEO", {"Population": "Population", "Exposure": "Exposure", "Outcome": "Outcome"}),
-    ]
-
-    for name, fields in frameworks:
-        Framework.objects.get_or_create(name=name, defaults={"fields": fields})
-
-
-def before_scenario(context, scenario):
-    context.published_events = []
-
-    # Normaliza y captura eventos del bus interno
-    def _capture_internal(event_type, data, source_module):
-        context.published_events.append({
-            "event": event_type,
-            "payload": data,
-            "source": source_module,
-        })
-
-    # Captura eventos si alguien usa BusAdapter (opcional)
-    def _capture_adapter(event_name, payload, **kwargs):
-        context.published_events.append({
-            "event": event_name,
-            "payload": payload,
-            "source": "adapter",
-        })
-
-    context._bus_internal_patcher = patch(
-        'shared.internal_message_bus.MessageBus.publish_event',
-        side_effect=_capture_internal
+@given('I have an assigned task to propose research questions for the current project')
+def step_impl(context):
+    # 1. Crear usuarios y proyecto
+    context.researcher = User.objects.create_user(username='researcher', password='password', email='researcher@test.com')
+    context.owner = User.objects.create_user(username='owner', password='password', email='owner@test.com')
+    context.project = Project.objects.create(name='Test Project', owner=context.owner)
+    # 2. Establecer la membresía del investigador
+    context.project.add_member(context.researcher, role='researcher')
+    context.project.add_member(context.owner, role='owner')
+    # 3. Crear la tarea de investigación en diseño
+    context.task = Task.objects.create(
+        project=context.project,
+        title='Propose Research Questions',
+        description='Task to propose research questions for the project.',
+        created_by=context.owner,
+        assigned_to=context.researcher
     )
-    context._bus_internal_patcher.start()
-
-    context._bus_adapter_patcher = patch(
-        'design.comunication.bus_adapter.BusAdapter.publish_event',
-        side_effect=_capture_adapter
-    )
-    context._bus_adapter_patcher.start()
-
-
-def after_scenario(context, scenario):
-    if hasattr(context, '_bus_patcher'):
-        context._bus_patcher.stop()
-
-@given('I have the research question "{question}"')
-def step_given_research_question(context, question):
-    context.researcher = Researcher.objects.create(
-        user=User.objects.create_user(username='test_researcher'),
-        name='Test Researcher'
-    )
-    context.research_question = ResearchQuestion.objects.create(
-        original_text=question,
+    context.question = ResearchQuestion.objects.create(
+        project=context.project,
         created_by=context.researcher,
-        created_at=datetime.now(),
     )
-    assert context.research_question.original_text == question
-    assert context.research_question.id is not None
+    # 4. Iniciar sesión con el cliente de prueba
+    context.client.login(username='researcher', password='password')
   
-@step('I have completed all the "{fields}" required by the "{framework}"')
-def step_when_complete_framework_fields(context, framework, fields):
-    before_all(context)
-    framework_obj = Framework.objects.get(name=framework)
-    required_fields = list(framework_obj.fields.keys())
-    provided_fields = [f.strip() for f in fields.split(',')]
-    missing_fields = [f for f in required_fields if f not in provided_fields]
-    extra_fields = [f for f in provided_fields if f not in required_fields]
-    context.framework_obj = framework_obj
-    context.required_fields = required_fields
-    context.provided_fields = provided_fields
-    context.missing_fields = missing_fields
-    context.extra_fields = extra_fields
-    assert not missing_fields
-    assert not extra_fields
+@step('I have prepared a draft of a research question using the "{framework}" with all required "{fields}" completed')
+def step_impl(context, framework, fields):
+    framework = framework.strip('"') 
+    print(f"DEBUG: Framework after stripping quotes: {framework}")
+    context.payload = {
+        "framework": framework,
+        "fields": {field.strip(): f"Test data for {field.strip()}" for field in fields.split(',')},
+        "reformulated_text": f"This is a reformulated question based on {framework}."
+    }
+    context.framework = framework
+    context.fields_from_step = fields
 
-@step('I have provided the reformulated question text')
-def step_and_write_reformulated_question(context):
-     # Simulo la entrada manual del researcher
-    context.reformulated_research_question = (
-        "¿Cómo influye la integración de tecnología educativa (intervención)"
-        "en estudiantes de instituciones educativas (población) comparado con métodos tradicionales"
-        "(comparación) para mejorar la efectividad del aprendizaje (resultado)?"
-    )
-    pass #Lo dejo pasar porque se valida en el envio
-
-@when('I send the draft to the research owner for review')
-def step_and_send_draft_for_review(context):
-    context.research_owner = ResearchOwner.objects.create(
-        user=User.objects.create_user(username='test_owner'),
-        name='Test Owner'
-    )
-    submition_service = ResearchQuestionSubmissionService()
-    refained_question_cmd = SubmitDraftForReviewCommand(
-        researcher_id=context.researcher.id,
-        research_question_id=context.research_question.id,
-        framework_id=context.framework_obj.id,
-        filled_fields={f: f"{f}-example" for f in context.provided_fields},
-        reformulated_text=context.reformulated_research_question,
-        status='to_review',
-    )
-    context.submission_result = submition_service.submit_draft_for_review(refained_question_cmd)
-    assert context.submission_result == 1
-    # Capturo la iteración creada para validarla en el Then
-
-@then('a reformulated version of the question should be generated and stored in the research question history including:')
-def step_then_reformulated_version_generated(context):
-    context.iteration = (
-        ReformulatedResearchQuestionIteration.objects
-        .filter(
-            researcher=context.researcher,
-            research_question=context.research_question,
-            status='to_review'
-        )
-        .order_by('-created_at')
-        .first()
-    )
-    assert context.iteration is not None
-    # Validaciones básicas de los elementos visibles
-    assert context.iteration.researcher.id == context.researcher.id
-    assert context.iteration.research_question.id == context.research_question.id
-    assert context.iteration.framework.id == context.framework_obj.id
-    assert set(context.iteration.filled_fields.keys()) == set(context.provided_fields)
-    assert context.iteration.reformulated_research_question == context.reformulated_research_question
-    assert context.iteration.status == 'to_review'
-    assert context.iteration.iteration_number >= 1
-    assert context.iteration.created_at is not None
-
-@step('the system should notify the owner about the iteration to approve')
-def step_then_system_sends_notify_for_review(context):
-    center = ApprovalCenter.objects.get(owner=context.research_owner)
-    item = ApprovalItem.objects.filter(
-        approval_center=center,
-        iteration=context.iteration
-    ).first()
-    assert item is not None, "Approval item not created for iteration/owner"
-    expected_event = "research_question.sent_to_owner_for_review"
-
-    events = getattr(context, 'published_events', None)
-    if not events:
-        from shared.internal_message_bus import get_message_bus
-        events = get_message_bus().get_published_events()
-
-    assert events, "No events were published"
-    match = next(
-        (e for e in events
-         if e.get("event") == expected_event
-         and e.get("payload", {}).get("approval_item_id") == item.id
-         and e.get("payload", {}).get("owner_id") == context.research_owner.id
-         and e.get("payload", {}).get("iteration_id") == context.iteration.id),
-        None
-    )
-    assert match is not None, "Notification event not published or payload mismatch"
-
-@step('I choose a framework "{framework}"')
-def step_and_choose_framework(context, framework):
-    context.selected_framework = Framework.objects.get(name=framework)
-    assert context.selected_framework is not None
-
-@when('I have completed "{partially_completed_fields}" of the "{framework}"')
-def step_when_partially_complete_framework_fields(context, partially_completed_fields, framework):
-    before_all(context)
-    framework_obj = Framework.objects.get(name=framework)
-    required_fields = list(framework_obj.fields.keys())
-    provided_fields = [f.strip() for f in partially_completed_fields.split(',')]
-    missing_fields = [f for f in required_fields if f not in provided_fields]
-    extra_fields = [f for f in provided_fields if f not in required_fields]
-    context.framework_obj = framework_obj
-    context.required_fields = required_fields
-    context.provided_fields = provided_fields
-    context.missing_fields = missing_fields
-    context.extra_fields = extra_fields
-    assert missing_fields  # Deben faltar campos
-    assert not extra_fields
-
-@step('And I have not yet completed all required information')
-def step_and_not_complete_all_required_information(context):
-    context.reformulated_research_question = ""
+@when('I submit the draft question for review with the following data')
+def step_impl(context):
+    payload = json.loads(context.text)
+    context.payload = payload
     
-    pass  # Lo dejo pasar porque se valida en el envio
+    url = f'/api/v1/design/questions/{context.question.id}/submit/'
+    context.response = context.client.post(
+        url,
+        data=json.dumps(context.payload),
+        content_type='application/json'
+    )
 
+@then('a new version of the question should be created with its status set to "{question_status}"')
+def step_impl(context, question_status):
+    assert context.response.status_code == status.HTTP_201_CREATED
+    context.question.refresh_from_db()
+    context.new_version = context.question.versions.latest('submitted_at')
+    assert context.new_version.status == question_status.upper()
+
+@step('the new version data must match the submitted data')
+def step_impl(context):
+    payload = context.payload
+    version = context.new_version
+
+    # Perform detailed assertions
+    assert version.researcher == context.researcher
+    assert version.framework == payload['framework'].upper()
+    assert version.reformulated_text == payload['reformulated_text']
+    assert version.framework_fields == payload['fields']
+    assert version.submitted_at is not None
+
+
+@step('a notification request should be dispatched to the communication module')
+def step_impl(context):
+    context.mock_notification.assert_called_once()
+# Segundo escenario
+@given('I am working on a research question for the "{framework}" framework')
+def step_impl(context, framework):
+    # 1. Configuración mínima: usuario, proyecto y pregunta contenedora.
+    context.researcher = User.objects.create_user(username='researcher', password='password')
+    context.owner = User.objects.create_user(username='owner', password='password')
+    context.project = Project.objects.create(name='Autosave Project', owner=context.owner)
+    context.question = ResearchQuestion.objects.create(
+        project=context.project,
+        created_by=context.researcher
+    )
+    
+    # 2. Almacenar el framework para usarlo en el 'When'
+    context.framework = framework
+    
+    # 3. Autenticar al cliente para la prueba de API
+    context.client.login(username='researcher', password='password')
+
+@when('the system receives a request to save a draft with the following data')
+def step_impl(context):
+    payload_partial = json.loads(context.text)
+    # 2. Construir el payload completo, añadiendo el framework del 'Given'
+    context.payload = {
+        "framework": context.framework,
+        "fields": payload_partial.get("fields", {}),
+        "reformulated_text": payload_partial.get("reformulated_text", "")
+    }
+    # 3. Definir el endpoint para guardar borradores (se asume PUT para idempotencia)
+    url = f'/api/v1/design/questions/{context.question.id}/draft/'
+    # 4. Realizar la petición a la API
+    context.response = context.client.put(
+        url,
+        data=json.dumps(context.payload),
+        content_type='application/json'
+    )
+
+@then('a research question version must exist with status "{question_status}"')
+def step_impl(context, question_status):
+    # 1. Verificar que la API respondió exitosamente (200 OK para una actualización/creación)
+    assert context.response.status_code == status.HTTP_200_OK
+    # 2. Verificar que el objeto existe en la base de datos con el estado correcto
+    try:
+        draft_version = ResearchQuestionVersion.objects.get(
+            question=context.question,
+            researcher=context.researcher,
+            status=question_status.upper()
+        )
+        context.draft_version = draft_version  # Guardar para el siguiente step
+    except ResearchQuestionVersion.DoesNotExist:
+        assert False, f"No ResearchQuestionVersion with status '{question_status.upper()}' was found."
+    except ResearchQuestionVersion.MultipleObjectsReturned:
+        assert False, "Found multiple DRAFT versions for the same question and user. The logic should be update-or-create."
+    
+
+@step('its data must match the submitted draft data')
+def step_impl(context):
+    # 1. Recuperar el payload enviado y la versión guardada desde el contexto
+    payload = context.payload
+    version = context.draft_version
+    # 2. Realizar aserciones detalladas para garantizar la integridad de los datos
+    assert version.framework == payload['framework'].upper()
+    assert version.framework_fields == payload['fields']
+    assert version.reformulated_text == payload['reformulated_text']
+
+@step('no notification for review should be sent')
+def step_impl(context):
+    context.mock_notification.assert_not_called()

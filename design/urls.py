@@ -1,7 +1,16 @@
-from django.urls import path
-from design import views
+from django.urls import include, path
+from design.views import SubmitQuestionVersionAPIView, SaveDraftAPIView
+
 
 urlpatterns = [
-    path('design/submit/', views.submit_reformulation, name='design_submit'),
-    path('design/owner-inbox/', views.owner_inbox, name='design_owner_inbox'),
+    path(
+        'questions/<int:question_id>/submit/', 
+        SubmitQuestionVersionAPIView.as_view(), 
+        name='submit-question-version'
+    ),
+    path(
+        'questions/<int:question_id>/draft/',
+        SaveDraftAPIView.as_view(),
+        name='save-draft-version'
+    ),
 ]
