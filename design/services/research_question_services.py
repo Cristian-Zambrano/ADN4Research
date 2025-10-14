@@ -1,5 +1,5 @@
 # services/design_service.py
-from design.exceptions.exceptions import SubmissionError
+from design.exceptions.exceptions import AlreadyValidatedException, InvalidStatusForValidationException, QuestionNotFoundException, QuestionVersionNotFoundException, SubmissionError, UnauthorizedValidationException
 from design.services import notification_service
 from ..models import ResearchQuestionVersion, ResearchQuestion
 from django.contrib.auth.models import User
@@ -19,36 +19,30 @@ def submit_question_for_review(
     Este método encapsula toda la lógica descrita en el escenario.
     """
     try:
-        # 1. Validar y obtener la pregunta principal y la última versión
         parent_question = ResearchQuestion.objects.get(id=question_id)
-        # Aquí iría la lógica para validar permisos del investigador
-        
-        last_version = parent_question.versions.order_by('-iteration_number').first()
-        new_iteration_number = (last_version.iteration_number + 1) if last_version else 1
-
-        # 2. Crear la nueva versión (el "Then" del escenario)
-        new_version = ResearchQuestionVersion.objects.create(
-            question=parent_question,
-            parent_version=last_version,
-            researcher=researcher,
-            status=ResearchQuestionVersion.StatusChoices.SUGGESTED,
-            iteration_number=new_iteration_number,
-            framework=framework,
-            framework_fields=fields,
-            reformulated_text=reformulated_text
-        )
-
-        # 3. Despachar la notificación (el último "And" del escenario)
-        # Esto invoca al "Design Bus Adapter"
-        notification_service.dispatch_notification_for_review(version=new_version)
-
-        return new_version
-
     except ResearchQuestion.DoesNotExist:
-        raise SubmissionError("La pregunta de investigación no existe.")
-    except Exception as e:
-        # Capturar otros posibles errores para no exponer detalles de implementación
-        raise SubmissionError(f"Error al procesar la solicitud: {e}")
+        raise QuestionNotFoundException(question_id=question_id)
+    
+    # Aquí iría validación de permisos del investigador (futura implementación)
+    
+    last_version = parent_question.versions.order_by('-iteration_number').first()
+    new_iteration_number = (last_version.iteration_number + 1) if last_version else 1
+
+    new_version = ResearchQuestionVersion.objects.create(
+        question=parent_question,
+        parent_version=last_version,
+        researcher=researcher,
+        status=ResearchQuestionVersion.StatusChoices.SUGGESTED,
+        iteration_number=new_iteration_number,
+        framework=framework,
+        framework_fields=fields,
+        reformulated_text=reformulated_text
+    )
+
+    notification_service.dispatch_notification_for_review(version=new_version)
+
+    return new_version
+
 @transaction.atomic
 def save_question_draft(
     *,
@@ -58,24 +52,120 @@ def save_question_draft(
     fields: dict,
     reformulated_text: str
 ) -> ResearchQuestionVersion:
-    print("Saving draft...")
-    print(fields)
     try:
         parent_question = ResearchQuestion.objects.get(id=question_id)
-        draft_version, created = ResearchQuestionVersion.objects.update_or_create(
-            question=parent_question,
-            researcher=researcher,
-            status=ResearchQuestionVersion.StatusChoices.DRAFT,
-            defaults={
-                'framework': framework.upper(),
-                'framework_fields': fields,
-                'reformulated_text': reformulated_text
-            }
+    except ResearchQuestion.DoesNotExist:
+        raise QuestionNotFoundException(question_id=question_id)
+
+    draft_version, created = ResearchQuestionVersion.objects.update_or_create(
+        question=parent_question,
+        researcher=researcher,
+        status=ResearchQuestionVersion.StatusChoices.DRAFT,
+        defaults={
+            'framework': framework.upper(),
+            'framework_fields': fields,
+            'reformulated_text': reformulated_text
+        }
+    )
+
+    return draft_version
+    
+@transaction.atomic
+def approve_question_version(
+    *,
+    validator: User,
+    question_id: int,
+    version_id: int,
+    justification: str
+) -> ResearchQuestionVersion:
+    try:
+        version = ResearchQuestionVersion.objects.select_related('question__project').get(
+            id=version_id, 
+            question__id=question_id
+        )
+    except ResearchQuestionVersion.DoesNotExist:
+        raise QuestionVersionNotFoundException(version_id=version_id, question_id=question_id)
+
+    # Validación 1: No permitir revalidación
+    if version.status in [
+        ResearchQuestionVersion.StatusChoices.APPROVED,
+        ResearchQuestionVersion.StatusChoices.REJECTED
+    ]:
+        raise AlreadyValidatedException()
+
+    # Validación 2: Solo se pueden aprobar versiones en estado SUGGESTED
+    if version.status != ResearchQuestionVersion.StatusChoices.SUGGESTED:
+        raise InvalidStatusForValidationException(
+            current_status=version.status,
+            required_status="SUGGESTED"
         )
 
-        return draft_version
+    # Validación 3: Solo el dueño del proyecto puede aprobar
+    if version.question.project.owner != validator:
+        raise UnauthorizedValidationException()
 
-    except ResearchQuestion.DoesNotExist:
-        raise SubmissionError(f"La pregunta de investigación con id={question_id} no existe.")
-    except Exception as e:
-        raise SubmissionError(f"Error al guardar el borrador: {e}")
+    # Transición de estado (regla de negocio principal)
+    version.status = ResearchQuestionVersion.StatusChoices.APPROVED
+    version.save()
+
+    # Registrar historial de validación
+    version.validation_history.create(
+        validator=validator,
+        action='APPROVED',
+        justification=justification
+    )
+
+    # Despachar notificación
+    notification_service.dispatch_notification_for_approval(version=version)
+
+    return version
+
+@transaction.atomic
+def reject_question_version(
+    *,
+    validator: User,
+    question_id: int,
+    version_id: int,
+    justification: str
+) -> ResearchQuestionVersion:
+    try:
+        version = ResearchQuestionVersion.objects.select_related('question__project').get(
+            id=version_id, 
+            question__id=question_id
+        )
+    except ResearchQuestionVersion.DoesNotExist:
+        raise QuestionVersionNotFoundException(version_id=version_id, question_id=question_id)
+
+    # Validación 1: No permitir revalidación
+    if version.status in [
+        ResearchQuestionVersion.StatusChoices.APPROVED,
+        ResearchQuestionVersion.StatusChoices.REJECTED
+    ]:
+        raise AlreadyValidatedException()
+
+    # Validación 2: Solo se pueden rechazar versiones en estado SUGGESTED
+    if version.status != ResearchQuestionVersion.StatusChoices.SUGGESTED:
+        raise InvalidStatusForValidationException(
+            current_status=version.status,
+            required_status="SUGGESTED"
+        )
+
+    # Validación 3: Solo el dueño del proyecto puede rechazar
+    if version.question.project.owner != validator:
+        raise UnauthorizedValidationException()
+
+    # Transición de estado
+    version.status = ResearchQuestionVersion.StatusChoices.REJECTED
+    version.save()
+
+    # Registrar historial de validación
+    version.validation_history.create(
+        validator=validator,
+        action='REJECTED',
+        justification=justification
+    )
+
+    # Despachar notificación (si se implementa)
+    notification_service.dispatch_notification_for_rejection(version=version)
+
+    return version

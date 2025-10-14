@@ -6,14 +6,14 @@ Feature: Validate the researchers research question
 
     Scenario: Research owner approves a research question
         Given there are research question versions with status "SUGGESTED" awaiting validation
-        When the owner approves a draft with the justification "Aligned with project objectives"
+        When the owner "approve" a draft with the justification "Aligned with project objectives"
         Then the question status should change from "SUGGESTED" to "APPROVED"
         And a history record should be created with approver, justification, and date
         And all other researchers should receive a notification of the "APPROVED" question
 
     Scenario: Research owner rejects a research question
         Given there are research question versions with status "SUGGESTED" awaiting validation
-        When the owner rejects a draft with the justification "Not aligned with project objectives"
+        When the owner "reject" a draft with the justification "Not aligned with project objectives"
         Then the question status should change from "SUGGESTED" to "REJECTED"
         And a history record should be created with approver, justification, and date
         And all other researchers should receive a notification of the "REJECTED" question

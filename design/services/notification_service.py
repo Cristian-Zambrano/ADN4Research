@@ -12,3 +12,17 @@ def dispatch_notification_for_review(version: ResearchQuestionVersion):
     
     print(f"INFO: Simulating notification dispatch for version ID: {version.id}") # Opcional: para ver en la consola
     pass
+
+def dispatch_notification_for_approval(version: ResearchQuestionVersion):
+    """
+    Placeholder para enviar una notificación de aprobación a través del Bus Adapter.
+    """
+    print(f"INFO: Simulating approval notification dispatch for version ID: {version.id}") # Opcional
+    pass
+
+def dispatch_notification_for_rejection(version: ResearchQuestionVersion):
+    """
+    Placeholder para enviar una notificación de rechazo a través del Bus Adapter.
+    """
+    print(f"INFO: Simulating rejection notification dispatch for version ID: {version.id}") # Opcional
+    pass

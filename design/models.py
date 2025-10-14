@@ -41,6 +41,27 @@ class ResearchQuestionVersion(models.Model):
     def __str__(self):
         return f"{self.question.id} - v{self.iteration_number} ({self.get_status_display()})"
 
+class ValidationHistory(models.Model):
+    version = models.ForeignKey(
+        ResearchQuestionVersion,
+        on_delete=models.CASCADE,
+        related_name='validation_history'
+    )
+    validator = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='validations_performed'
+    )
+    action = models.CharField(
+        max_length=20,
+        choices=[('APPROVED', 'Approved'), ('REJECTED', 'Rejected')]
+    )
+    justification = models.TextField()
+    validated_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-validated_at']
+
 class Task(models.Model):
     project = models.ForeignKey('projects.Project', on_delete=models.CASCADE, related_name='desing_tasks')
     title = models.CharField(max_length=255)

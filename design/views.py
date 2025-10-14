@@ -3,9 +3,10 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from design.exceptions.exceptions import SubmissionError
+from design.exceptions.exceptions import AlreadyValidatedException, InvalidStatusForValidationException, QuestionVersionNotFoundException, SubmissionError, UnauthorizedValidationException
+from design.models import ResearchQuestionVersion
 from design.services import research_question_services
-from .serializers import DraftQuestionVersionSerializer, QuestionSubmissionSerializer, QuestionVersionResponseSerializer
+from .serializers import DraftQuestionVersionSerializer, QuestionSubmissionSerializer, QuestionVersionResponseSerializer, ValidationJustificationSerializer
 
 class SubmitQuestionVersionAPIView(APIView):
     permission_classes = [IsAuthenticated]
@@ -47,4 +48,59 @@ class SaveDraftAPIView(APIView):
             response_serializer = QuestionVersionResponseSerializer(draft_version) # Reutilizamos el serializer si aplica
             return Response(response_serializer.data, status=status.HTTP_200_OK)
         except SubmissionError as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+
+class ApproveQuestionVersionAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, question_id: int, version_id: int):
+        serializer = ValidationJustificationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            validated_version = research_question_services.approve_question_version(
+                validator=request.user,
+                question_id=question_id,
+                version_id=version_id,
+                justification=serializer.validated_data['justification']
+            )
+            response_serializer = QuestionVersionResponseSerializer(validated_version)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
+        
+        except UnauthorizedValidationException as e:
+            return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        
+        except (AlreadyValidatedException, InvalidStatusForValidationException) as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        except QuestionVersionNotFoundException as e:
+            return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)
+
+
+class RejectQuestionVersionAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, question_id: int, version_id: int):
+        serializer = ValidationJustificationSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            validated_version = research_question_services.reject_question_version(
+                validator=request.user,
+                question_id=question_id,
+                version_id=version_id,
+                justification=serializer.validated_data['justification']
+            )
+            response_serializer = QuestionVersionResponseSerializer(validated_version)
+            return Response(response_serializer.data, status=status.HTTP_200_OK)
+        
+        except UnauthorizedValidationException as e:
+            return Response({"error": str(e)}, status=status.HTTP_403_FORBIDDEN)
+        
+        except (AlreadyValidatedException, InvalidStatusForValidationException) as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+        except QuestionVersionNotFoundException as e:
             return Response({"error": str(e)}, status=status.HTTP_404_NOT_FOUND)

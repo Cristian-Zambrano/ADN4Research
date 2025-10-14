@@ -23,3 +23,7 @@ class QuestionVersionResponseSerializer(serializers.ModelSerializer):
     class Meta:
         model = ResearchQuestionVersion
         fields = ['id', 'framework', 'fields', 'reformulated_text', 'status', 'submitted_at']
+
+class ValidationJustificationSerializer(serializers.Serializer):
+    """Valida la justificación requerida para aprobar/rechazar una versión."""
+    justification = serializers.CharField(min_length=10)
