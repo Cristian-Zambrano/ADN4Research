@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reformular Pregunta - ADN4Research</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f3f4f6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .breadcrumb {
+            background: #f9fafb;
+            padding: 15px 40px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            padding: 40px;
+        }
+        .form-section {
+            margin-bottom: 30px;
+        }
+        .form-section h2 {
+            font-size: 18px;
+            color: #1f2937;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        .form-section h2::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        label .required {
+            color: #ef4444;
+        }
+        select, input[type="text"], textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+        .help-text {
+            font-size: 13px;
+            color: #6b7280;
+            margin-top: 6px;
+        }
+        .framework-fields {
+            background: #f9fafb;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+        .framework-placeholder {
+            text-align: center;
+            color: #9ca3af;
+            padding: 40px 20px;
+            font-size: 14px;
+        }
+        .framework-placeholder-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .btn-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 40px;
+            padding-top: 30px;
+            border-top: 2px solid #f3f4f6;
+        }
+        .btn {
+            padding: 14px 32px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-cancel {
+            background: #f3f4f6;
+            color: #6b7280;
+        }
+        .btn-cancel:hover {
+            background: #e5e7eb;
+        }
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-size: 14px;
+            color: #1e40af;
+        }
+        .info-box strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>✏️ Reformular Pregunta de Investigación</h1>
+            <p>Utiliza marcos de trabajo investigativos para estructurar tu pregunta</p>
+        </div>
+
+        <div class="breadcrumb">
+            <a href="/design/tasks/">Tareas</a> / 
+            <a href="/design/questions/history/">Historial</a> / 
+            Reformular Pregunta
+        </div>
+
+        <div class="content">
+            <div class="info-box">
+                <strong>💡 Instrucciones:</strong>
+                Selecciona un marco de trabajo (framework) investigativo y completa los campos solicitados. 
+                El sistema te ayudará a estructurar una pregunta de investigación precisa y bien definida.
+            </div>
+
+            <form id="questionForm">
+                <!-- Sección 1: Selección de Framework -->
+                <div class="form-section">
+                    <h2>1️⃣ Selección del Marco de Trabajo</h2>
+                    <div class="form-group">
+                        <label for="framework">
+                            Framework <span class="required">*</span>
+                        </label>
+                        <select id="framework" name="framework" required onchange="updateFrameworkFields()">
+                            <option value="">-- Selecciona un framework --</option>
+                            <option value="PICO">PICO (Population, Intervention, Comparison, Outcome)</option>
+                            <option value="PEO">PEO (Population, Exposure, Outcome)</option>
+                            <option value="PCC">PCC (Population, Concept, Context)</option>
+                        </select>
+                        <div class="help-text">
+                            El framework te ayudará a estructurar tu pregunta de investigación según estándares metodológicos.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 2: Campos del Framework (dinámicos) -->
+                <div class="form-section">
+                    <h2>2️⃣ Completar Campos del Framework</h2>
+                    <div id="frameworkFields" class="framework-fields">
+                        <div class="framework-placeholder">
+                            <div class="framework-placeholder-icon">📋</div>
+                            <p>Selecciona un framework para mostrar los campos correspondientes</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección 3: Pregunta Reformulada -->
+                <div class="form-section">
+                    <h2>3️⃣ Pregunta Reformulada</h2>
+                    <div class="form-group">
+                        <label for="reformulated_text">
+                            Pregunta de Investigación Reformulada <span class="required">*</span>
+                        </label>
+                        <textarea 
+                            id="reformulated_text" 
+                            name="reformulated_text" 
+                            required
+                            placeholder="Escribe aquí tu pregunta de investigación basada en los campos del framework..."
+                        ></textarea>
+                        <div class="help-text">
+                            Redacta una pregunta clara, precisa y específica que integre los elementos del framework seleccionado.
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="btn-container">
+                    <a href="/design/questions/history/" class="btn btn-cancel">
+                        ← Cancelar
+                    </a>
+                    <button type="button" class="btn btn-submit" onclick="submitForm()">
+                        📤 Enviar a Revisión
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Definición de campos por framework
+        const frameworkFieldsConfig = {
+            PICO: [
+                { name: 'Population', label: 'Population (Población)', placeholder: 'Ej: Adultos con diabetes tipo 2' },
+                { name: 'Intervention', label: 'Intervention (Intervención)', placeholder: 'Ej: Dieta baja en carbohidratos' },
+                { name: 'Comparison', label: 'Comparison (Comparación)', placeholder: 'Ej: Dieta estándar recomendada' },
+                { name: 'Outcome', label: 'Outcome (Resultado)', placeholder: 'Ej: Niveles de HbA1c' }
+            ],
+            PEO: [
+                { name: 'Population', label: 'Population (Población)', placeholder: 'Ej: Trabajadores de oficina' },
+                { name: 'Exposure', label: 'Exposure (Exposición)', placeholder: 'Ej: Trabajo remoto prolongado' },
+                { name: 'Outcome', label: 'Outcome (Resultado)', placeholder: 'Ej: Niveles de estrés laboral' }
+            ],
+            PCC: [
+                { name: 'Population', label: 'Population (Población)', placeholder: 'Ej: Enfermeras pediátricas' },
+                { name: 'Concept', label: 'Concept (Concepto)', placeholder: 'Ej: Experiencias de burnout' },
+                { name: 'Context', label: 'Context (Contexto)', placeholder: 'Ej: Durante la pandemia COVID-19' }
+            ]
+        };
+
+        // Función para actualizar los campos según el framework seleccionado
+        function updateFrameworkFields() {
+            const frameworkSelect = document.getElementById('framework');
+            const selectedFramework = frameworkSelect.value;
+            const container = document.getElementById('frameworkFields');
+
+            if (!selectedFramework) {
+                container.innerHTML = `
+                    <div class="framework-placeholder">
+                        <div class="framework-placeholder-icon">📋</div>
+                        <p>Selecciona un framework para mostrar los campos correspondientes</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const fields = frameworkFieldsConfig[selectedFramework];
+            let html = '';
+
+            fields.forEach(field => {
+                html += `
+                    <div class="form-group">
+                        <label for="${field.name}">
+                            ${field.label} <span class="required">*</span>
+                        </label>
+                        <input 
+                            type="text" 
+                            id="${field.name}" 
+                            name="fields[${field.name}]" 
+                            placeholder="${field.placeholder}"
+                            required
+                        />
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // Función para enviar el formulario (simulada)
+        function submitForm() {
+            const form = document.getElementById('questionForm');
+            
+            // Validación básica
+            if (!form.checkValidity()) {
+                alert('⚠️ Por favor completa todos los campos requeridos');
+                form.reportValidity();
+                return;
+            }
+
+            // Obtener valores del formulario
+            const framework = document.getElementById('framework').value;
+            const reformulatedText = document.getElementById('reformulated_text').value;
+
+            // Obtener campos del framework
+            const fields = {};
+            const fieldInputs = document.querySelectorAll('[name^="fields["]');
+            fieldInputs.forEach(input => {
+                const fieldName = input.id;
+                fields[fieldName] = input.value;
+            });
+
+            // Construir el payload (como en el test BDD)
+            const payload = {
+                framework: framework,
+                fields: fields,
+                reformulated_text: reformulatedText
+            };
+
+            // Simulación de éxito (sin conexión al backend)
+            console.log('📤 Payload que se enviaría al backend:', JSON.stringify(payload, null, 2));
+            
+            alert(`✅ Pregunta enviada a revisión exitosamente!\n\n` +
+                  `Framework: ${framework}\n` +
+                  `Pregunta: ${reformulatedText}\n\n` +
+                  `(Esta es una simulación. El backend será conectado después)`);
+            
+            // Redirigir al historial (simulado)
+            // window.location.href = '/design/questions/history/';
+        }
+    </script>
+</body>
+</html>

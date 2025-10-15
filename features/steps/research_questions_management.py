@@ -29,18 +29,6 @@ def step_impl(context):
     # 4. Iniciar sesión con el cliente de prueba
     context.client.login(username='researcher', password='password')
   
-@step('I have prepared a draft of a research question using the "{framework}" with all required "{fields}" completed')
-def step_impl(context, framework, fields):
-    framework = framework.strip('"') 
-    print(f"DEBUG: Framework after stripping quotes: {framework}")
-    context.payload = {
-        "framework": framework,
-        "fields": {field.strip(): f"Test data for {field.strip()}" for field in fields.split(',')},
-        "reformulated_text": f"This is a reformulated question based on {framework}."
-    }
-    context.framework = framework
-    context.fields_from_step = fields
-
 @when('I submit the draft question for review with the following data')
 def step_impl(context):
     payload = json.loads(context.text)
@@ -123,7 +111,7 @@ def step_impl(context, question_status):
             researcher=context.researcher,
             status=question_status.upper()
         )
-        context.draft_version = draft_version  # Guardar para el siguiente step
+        context.draft_version = draft_version  
     except ResearchQuestionVersion.DoesNotExist:
         assert False, f"No ResearchQuestionVersion with status '{question_status.upper()}' was found."
     except ResearchQuestionVersion.MultipleObjectsReturned:

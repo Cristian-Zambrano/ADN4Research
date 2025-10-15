@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial de Preguntas - ADN4Research</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f3f4f6;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header-left h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        .header-left p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .breadcrumb {
+            background: #f9fafb;
+            padding: 15px 40px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .breadcrumb a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+        .content {
+            padding: 40px;
+        }
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .toolbar h2 {
+            font-size: 22px;
+            color: #1f2937;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        .table-container {
+            overflow-x: auto;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        thead {
+            background: #f9fafb;
+            border-bottom: 2px solid #e5e7eb;
+        }
+        th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            color: #374151;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 16px;
+            border-bottom: 1px solid #f3f4f6;
+            color: #6b7280;
+        }
+        tbody tr:hover {
+            background: #f9fafb;
+        }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        .status-draft {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .status-suggested {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .status-approved {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        .status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .btn-small {
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            border: none;
+            cursor: pointer;
+            margin-right: 8px;
+        }
+        .btn-view {
+            background: #e0e7ff;
+            color: #3730a3;
+        }
+        .btn-view:hover {
+            background: #c7d2fe;
+        }
+        .btn-edit {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .btn-edit:hover {
+            background: #fde68a;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #9ca3af;
+        }
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .empty-state h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #6b7280;
+        }
+        .project-tag {
+            background: #ede9fe;
+            color: #5b21b6;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <h1>📚 Historial de Preguntas de Investigación</h1>
+                <p>Proyecto: Anti Patterns</p>
+            </div>
+        </div>
+
+        <div class="breadcrumb">
+            <a href="/design/tasks/">← Volver a Tareas</a> / Preguntas de Investigación
+        </div>
+
+        <div class="content">
+            <div class="toolbar">
+                <h2>Mis Propuestas de Preguntas</h2>
+                <button class="btn-primary" onclick="alert('⚠️ Funcionalidad pendiente: Crear nueva pregunta')">
+                    ➕ Añadir Pregunta de Investigación
+                </button>
+            </div>
+
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Tema del Proyecto</th>
+                            <th>Criterio (Framework)</th>
+                            <th>Pregunta Propuesta</th>
+                            <th>Creación</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Registro inicial vacío (según requisito) -->
+                        <tr>
+                            <td><span class="project-tag">Anti Patterns</span></td>
+                            <td><em style="color: #d1d5db;">Sin definir</em></td>
+                            <td><em style="color: #d1d5db;">Sin pregunta aún</em></td>
+                            <td>2025-01-15</td>
+                            <td><span class="status-badge status-draft">📝 Borrador</span></td>
+                            <td>
+                                <a href="#" class="btn-small btn-view" onclick="alert('⚠️ No hay traza que visualizar aún'); return false;">
+                                    👁️ Visualizar Traza
+                                </a>
+                                <a href="/design/questions/1/edit/" class="btn-small btn-edit">
+                                    ✏️ Editar
+                                </a>
+                            </td>
+                        </tr>
+
+                        <!-- Ejemplos adicionales de preguntas (comentados para mostrar solo el registro inicial) -->
+                        <!--
+                        <tr>
+                            <td><span class="project-tag">Anti Patterns</span></td>
+                            <td><strong>PICO</strong></td>
+                            <td>¿Cuál es el efecto de aplicar refactoring automático en la reducción de code smells en proyectos Java?</td>
+                            <td>2025-01-14</td>
+                            <td><span class="status-badge status-suggested">📤 En Revisión</span></td>
+                            <td>
+                                <a href="#" class="btn-small btn-view">👁️ Visualizar Traza</a>
+                                <a href="#" class="btn-small btn-edit">✏️ Editar</a>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><span class="project-tag">Anti Patterns</span></td>
+                            <td><strong>PEO</strong></td>
+                            <td>¿Cuál es la relación entre el uso de patrones de diseño y la mantenibilidad del código en sistemas legacy?</td>
+                            <td>2025-01-10</td>
+                            <td><span class="status-badge status-approved">✅ Aprobada</span></td>
+                            <td>
+                                <a href="#" class="btn-small btn-view">👁️ Visualizar Traza</a>
+                                <a href="#" class="btn-small btn-edit" style="opacity: 0.5; pointer-events: none;">✏️ Editar</a>
+                            </td>
+                        </tr>
+                        -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Estado vacío alternativo (comentado, por si prefieres mostrarlo en lugar de la fila inicial) -->
+            <!--
+            <div class="empty-state">
+                <div class="empty-state-icon">📋</div>
+                <h3>No hay preguntas de investigación aún</h3>
+                <p>Comienza creando tu primera pregunta para el proyecto.</p>
+            </div>
+            -->
+        </div>
+    </div>
+</body>
+</html>

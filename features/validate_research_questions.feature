@@ -3,7 +3,6 @@ Feature: Validate the researchers research question
     I want to maintain control over the research questions of the project
     So that I can ensure a proper validation of them and keep a traceable history.
 
-
     Scenario: Research owner approves a research question
         Given there are research question versions with status "SUGGESTED" awaiting validation
         When the owner "approve" a draft with the justification "Aligned with project objectives"

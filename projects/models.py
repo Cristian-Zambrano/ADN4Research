@@ -17,6 +17,11 @@ class Project(models.Model):
     def remove_member(self, user):
         ProjectMembership.objects.filter(project=self, user=user).delete()
 
+    def is_member(self, user: User) -> bool:
+        if self.owner == user:
+            return True
+        return self.projectmembership_set.filter(user=user).exists()
+
 class ProjectMembership(models.Model):
     """Intermediate model to store the role of a user in a project."""
     class RoleChoices(models.TextChoices):

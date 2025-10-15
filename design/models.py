@@ -30,7 +30,7 @@ class ResearchQuestionVersion(models.Model):
     researcher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='question_versions')
     status = models.CharField(max_length=10, choices=StatusChoices.choices, default=StatusChoices.DRAFT)
     iteration_number = models.PositiveIntegerField(default=1)
-    submitted_at = models.DateTimeField(auto_now_add=True) # Corresponde a 'timestamp'
+    submitted_at = models.DateTimeField(auto_now_add=True) 
 
     # Datos del Escenario
     framework = models.CharField(max_length=4, choices=FrameworkChoices.choices)

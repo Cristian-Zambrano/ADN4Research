@@ -22,6 +22,9 @@ def submit_question_for_review(
         parent_question = ResearchQuestion.objects.get(id=question_id)
     except ResearchQuestion.DoesNotExist:
         raise QuestionNotFoundException(question_id=question_id)
+    # Esto para cuando ya haya gestion de usuarios y proyectos
+    #if not parent_question.project.is_member(researcher):
+    #    raise UnauthorizedSubmissionException(project_name=parent_question.project.name)
     
     # Aquí iría validación de permisos del investigador (futura implementación)
     
@@ -56,6 +59,9 @@ def save_question_draft(
         parent_question = ResearchQuestion.objects.get(id=question_id)
     except ResearchQuestion.DoesNotExist:
         raise QuestionNotFoundException(question_id=question_id)
+    # Esto para cuando ya haya gestion de usuarios y proyectos
+    #if not parent_question.project.is_member(researcher):
+    #    raise UnauthorizedSubmissionException(project_name=parent_question.project.name)
 
     draft_version, created = ResearchQuestionVersion.objects.update_or_create(
         question=parent_question,

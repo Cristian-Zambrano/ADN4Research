@@ -1,5 +1,0 @@
-"""Event definitions for design module"""
-RQ_DRAFT_TO_REVIEW_CREATED = "rq.draft.to_review.created"
-RQ_DRAFT_INCOMPLETE_SAVED = "rq.draft.incomplete.saved"
-RQ_REJECTED = "rq.rejected"
-RQ_APPROVED = "rq.approved"

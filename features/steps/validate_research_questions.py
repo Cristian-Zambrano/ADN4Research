@@ -1,5 +1,4 @@
 
-from datetime import datetime
 import json
 from behave import given, when, then, step
 from django.contrib.auth.models import User
@@ -30,8 +29,7 @@ def step_impl(context, question_status):
             'Outcome': 'HbA1c levels'
         },
         reformulated_text='What is the effect of a low-carb diet compared to a standard diet on HbA1c levels in adults with diabetes?',
-        status=question_status.upper(),  
-        submitted_at=datetime.now() 
+        status=question_status.upper()
     )
     context.expected_status_before_validation = question_status.upper()
     context.client.login(username='owner', password='password')
@@ -79,9 +77,6 @@ def step_impl(context, new_status):
     assert 'version' in call_kwargs
     assert call_kwargs['version'].id == context.version_to_validate.id
     assert call_kwargs['version'].status == new_status.upper()
-
-# Segundo escenario reutilizando los pasos anteriores
-
 
 # Tercer escenario reutilizando los pasos anteriores
 @when('the owner tries to validate an "{question_status}" version again')
